@@ -1,0 +1,265 @@
+/* upload.css */
+
+/* Main page background */
+.stApp {
+    background: linear-gradient(135deg, #0d0d0f 0%, #1b1b24 50%, #262637 100%);
+    color: #E5E5E5;
+}
+
+/* Upload container styling */
+.upload-container {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 2px dashed #4299e1;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    transition: all 0.3s ease;
+    margin: 20px 0;
+}
+
+.upload-container:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #63b3ed;
+    transform: translateY(-2px);
+}
+
+.upload-container.drag-over {
+    background: rgba(66, 153, 225, 0.15);
+    border-color: #90cdf4;
+    border-style: solid;
+}
+
+/* Upload icon */
+.upload-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    color: #4299e1;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Upload text */
+.upload-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 10px;
+}
+
+.upload-subtext {
+    font-size: 1rem;
+    color: #a0aec0;
+    margin-bottom: 30px;
+}
+
+/* File info card */
+.file-info-card {
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+    border-left: 4px solid #4299e1;
+}
+
+.file-info-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 5px;
+}
+
+.file-info-detail {
+    font-size: 0.95rem;
+    color: #a0aec0;
+    font-family: monospace;
+}
+
+/* Process button */
+.process-button {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 40px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(66, 153, 225, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.process-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(66, 153, 225, 0.4);
+    background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
+}
+
+.process-button:disabled {
+    background: #4a5568;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Success message */
+.success-message {
+    background: rgba(56, 161, 105, 0.15);
+    border-left: 4px solid #38a169;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress bar styling */
+.stProgress > div > div > div > div {
+    background: linear-gradient(90deg, #4299e1, #63b3ed);
+    border-radius: 4px;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin: 5px;
+}
+
+.status-pending {
+    background: rgba(214, 158, 46, 0.15);
+    color: #fbd38d;
+    border: 1px solid rgba(214, 158, 46, 0.3);
+}
+
+.status-processing {
+    background: rgba(66, 153, 225, 0.15);
+    color: #90cdf4;
+    border: 1px solid rgba(66, 153, 225, 0.3);
+}
+
+.status-completed {
+    background: rgba(56, 161, 105, 0.15);
+    color: #9ae6b4;
+    border: 1px solid rgba(56, 161, 105, 0.3);
+}
+
+/* Stage progress */
+.stage-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    transition: all 0.3s ease;
+}
+
+.stage-container.active {
+    background: rgba(66, 153, 225, 0.1);
+    border-left: 4px solid #4299e1;
+}
+
+.stage-container.completed {
+    background: rgba(56, 161, 105, 0.1);
+    border-left: 4px solid #38a169;
+}
+
+/* Headers */
+h1, h2, h3 {
+    background: linear-gradient(90deg, #4299e1, #63b3ed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Hide Streamlit default elements */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #3182ce, #2b6cb0);
+}
+
+/* Additional button styles for Streamlit components */
+.stButton button {
+    width: 100%;
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 20px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+    margin-top: 20px;
+}
+
+.stButton button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(66, 153, 225, 0.5);
+    background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
+}
+
+.stButton button:active {
+    transform: translateY(-1px);
+}
+
+.stButton button:disabled {
+    background: #4a5568;
+    transform: none;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* Download button styles */
+.stDownloadButton button {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);
+    width: 100%;
+}
+
+.stDownloadButton button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(56, 161, 105, 0.4);
+    background: linear-gradient(135deg, #2f855a 0%, #276749 100%);
+}

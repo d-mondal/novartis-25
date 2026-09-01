@@ -14,6 +14,8 @@ whole grounding story, and it is the thing to say out loud in an interview:
 """
 from __future__ import annotations
 
+import re
+
 import pandas as pd
 
 # DQI driver weights, keyed by the CLEAN column names used in app.py's
@@ -147,8 +149,15 @@ def analyze_drivers(df: pd.DataFrame, site_id, top_k: int = 5) -> dict:
     exposed to a user, and it is a genuinely new capability the dashboard did
     not have before.
     """
+    site_id = str(site_id).strip()
     present = [c for c in DQI_DRIVER_WEIGHTS if c in df.columns]
-    site_df = df[df["site_id"] == site_id]
+    site_df = df[df["site_id"].astype(str) == site_id]
+    if site_df.empty:
+        # tolerate a bare number ("1640") when the stored id is "Site 1640"
+        key = site_id.lower().replace("site", "").strip()
+        norm = (df["site_id"].astype(str).str.lower()
+                .str.replace("site", "", regex=False).str.strip())
+        site_df = df[norm == key]
     if site_df.empty or not present:
         return {"site_id": site_id, "avg_dqi": None, "drivers": []}
 
@@ -176,37 +185,50 @@ def analyze_drivers(df: pd.DataFrame, site_id, top_k: int = 5) -> dict:
     }
 
 
-def sites_below_dqi(df: pd.DataFrame, threshold: float, n: int = 10) -> list[dict]:
-    """Sites whose average DQI is below `threshold`, worst first (up to n)."""
+def sites_below_dqi(df: pd.DataFrame, threshold, n: int = 10) -> list:
+    """Sites whose average DQI is below `threshold`, worst first (up to n).
+
+    Written as a plain groupby loop with explicit Python casts — no dataframe
+    boolean-mask comparison, no to_dict — so it behaves identically across
+    pandas versions and always returns JSON-safe native types.
+    """
     if df.empty:
         return []
-    g = (
-        df.assign(_dqi=_num(df["dqi"]))
-        .groupby("site_id")
-        .agg(avg_dqi=("_dqi", "mean"), patients=("patient_id", "nunique"))
-        .reset_index()
-    )
-    g = g[g["avg_dqi"] < threshold].sort_values("avg_dqi").head(n)
-    g["avg_dqi"] = g["avg_dqi"].round(1)
-    return g.to_dict("records")
+    threshold = float(threshold)
+    n = int(n)
+    tmp = df[["site_id", "patient_id", "dqi"]].copy()
+    tmp["dqi"] = _num(tmp["dqi"])
+    rows = []
+    for sid, sub in tmp.groupby("site_id"):
+        avg = float(sub["dqi"].mean())
+        if avg < threshold:
+            rows.append({
+                "site_id": str(sid),
+                "avg_dqi": round(avg, 1),
+                "patients": int(sub["patient_id"].nunique()),
+            })
+    rows.sort(key=lambda r: r["avg_dqi"])
+    return rows[:n]
 
 
-def country_summary(df: pd.DataFrame, n: int = 15) -> list[dict]:
-    """Per-country average DQI and patient counts, worst DQI first (up to n)."""
+def country_summary(df: pd.DataFrame, n: int = 15) -> list:
+    """Per-country average DQI and counts, worst DQI first (up to n). Plain-loop
+    implementation for the same version-robustness reasons as sites_below_dqi."""
     if df.empty or "country" not in df.columns:
         return []
-    g = (
-        df.assign(_dqi=_num(df["dqi"]))
-        .groupby("country")
-        .agg(avg_dqi=("_dqi", "mean"),
-             patients=("patient_id", "nunique"),
-             sites=("site_id", "nunique"))
-        .reset_index()
-        .sort_values("avg_dqi")
-        .head(n)
-    )
-    g["avg_dqi"] = g["avg_dqi"].round(1)
-    return g.to_dict("records")
+    n = int(n)
+    tmp = df[["country", "site_id", "patient_id", "dqi"]].copy()
+    tmp["dqi"] = _num(tmp["dqi"])
+    rows = []
+    for c, sub in tmp.groupby("country"):
+        rows.append({
+            "country": str(c),
+            "avg_dqi": round(float(sub["dqi"].mean()), 1),
+            "patients": int(sub["patient_id"].nunique()),
+            "sites": int(sub["site_id"].nunique()),
+        })
+    rows.sort(key=lambda r: r["avg_dqi"])
+    return rows[:n]
 
 
 def collect_allowed_numbers(*grounded_objects) -> set[str]:
@@ -237,6 +259,12 @@ def collect_allowed_numbers(*grounded_objects) -> set[str]:
             return
         elif isinstance(o, (int, float)):
             _add(o)
+        elif isinstance(o, str):
+            # numbers embedded in identifiers ("Site 1640") are legitimate to
+            # echo back, so allow them too — otherwise the grounding check
+            # false-flags the site ID as an invented figure.
+            for tok in re.findall(r"\d+\.?\d*", o):
+                _add(tok)
 
     for obj in grounded_objects:
         _walk(obj)

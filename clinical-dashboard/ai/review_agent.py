@@ -72,6 +72,7 @@ class ReviewState(TypedDict, total=False):
     retry_count: int
     grounding_ok: bool
     validation_notes: str
+    llm_failed: bool
 
 
 # ------------------------------------------------------------------ nodes ----
@@ -110,6 +111,11 @@ def _allowed(state: ReviewState) -> list:
     return sorted(allowed)
 
 
+def _is_llm_error(text: str) -> bool:
+    """gemini_client.gemini_call returns '[Gemini Error] ...' on API failure."""
+    return isinstance(text, str) and text.lstrip().startswith("[Gemini Error]")
+
+
 def node_synthesize(state: ReviewState) -> dict:
     facts = {
         "goal": state.get("goal"),
@@ -141,8 +147,21 @@ RULES:
 - Use ONLY numbers that appear in FACTS. Never invent or estimate a figure.
 - If something is not in FACTS, describe it qualitatively instead.
 - Professional, specific, no filler.{correction}"""
+    out = gemini_call(prompt)
+    if _is_llm_error(out):
+        # LLM is down (e.g. bad/leaked key). Don't run the grounding loop on an
+        # error string; surface a clean message and let the graph finish. The
+        # grounded facts already in state (KPIs, drivers) stay valid and render.
+        return {
+            "review_text": "LLM narration unavailable (check GEMINI_API_KEY). "
+                           "The grounded figures below are still valid.",
+            "llm_failed": True,
+            "grounding_ok": True,
+            "retry_count": state.get("retry_count", 0) + 1,
+            "allowed_numbers": _allowed(state),
+        }
     return {
-        "review_text": gemini_call(prompt),
+        "review_text": out,
         "retry_count": state.get("retry_count", 0) + 1,
         "allowed_numbers": _allowed(state),
     }
@@ -150,6 +169,8 @@ RULES:
 
 def node_validate(state: ReviewState) -> dict:
     """Deterministic grounding check: flag numbers in the prose not in FACTS."""
+    if state.get("llm_failed"):
+        return {"grounding_ok": True, "validation_notes": ""}
     allowed = set(state.get("allowed_numbers") or _allowed(state))
     text = state.get("review_text", "")
     found = re.findall(r"\d+\.?\d*", text.replace(",", ""))
@@ -178,6 +199,8 @@ def route_validation(state: ReviewState) -> str:
 
 
 def node_action_plan(state: ReviewState) -> dict:
+    if state.get("llm_failed"):
+        return {"action_plan": ""}
     prompt = f"""You are a Clinical Operations Lead. From this grounded review,
 produce a prioritized action plan.
 
@@ -193,6 +216,8 @@ For each item give: urgency (Immediate / High / Routine), the responsible role
 
 
 def node_draft_email(state: ReviewState) -> dict:
+    if state.get("llm_failed"):
+        return {"sponsor_email": ""}
     prompt = f"""Draft a short sponsor-facing email (subject + body) summarizing
 this site-monitoring review and the immediate actions. This is a DRAFT a human
 will review before sending. Do not invent metrics; use only what is below.
